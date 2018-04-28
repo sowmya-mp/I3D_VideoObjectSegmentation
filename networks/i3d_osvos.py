@@ -239,22 +239,28 @@ class I3D(torch.nn.Module):
 
         #Upsampling Module
         self.side_prep1 = torch.nn.Conv3d(in_channels=64, out_channels=16, kernel_size=1, stride=1, bias=False)
+        self.score_dsn1 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
         self.upsample1 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(2,2,2), stride=(2,2,2), bias=False)
-        self.upsample1_ = torch.nn.ConvTranspose3d(in_channels=16, out_channels=1, kernel_size=(2,2,2), stride=(2,2,2), bias=False)
+        self.upsample1_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(2,2,2), stride=(2,2,2), bias=False)
 
         self.side_prep2 = torch.nn.Conv3d(in_channels=192, out_channels=16, kernel_size=1, stride=1, bias=False)
+        self.score_dsn2 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
         self.upsample2 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(2,4,4), stride=(2,4,4), bias=False)
-        self.upsample2_ = torch.nn.ConvTranspose3d(in_channels=16, out_channels=1, kernel_size=(2,4,4), stride=(2,4,4), bias=False)
+        self.upsample2_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(2,4,4), stride=(2,4,4), bias=False)
 
         self.side_prep3 = torch.nn.Conv3d(in_channels=480, out_channels=16, kernel_size=1, stride=1, bias=False)
+        self.score_dsn3 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
         self.upsample3 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(2,8,8), stride=(2,8,8), bias=False)
-        self.upsample3_ = torch.nn.ConvTranspose3d(in_channels=16, out_channels=1, kernel_size=(2,8,8), stride=(2,8,8), bias=False)
+        self.upsample3_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(2,8,8), stride=(2,8,8), bias=False)
 
         self.side_prep4 = torch.nn.Conv3d(in_channels=832, out_channels=16, kernel_size=1, stride=1, bias=False)
+        self.score_dsn4 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
         self.upsample4 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(2,16,16), stride=(4,16,16), bias=False)
-        self.upsample4_ = torch.nn.ConvTranspose3d(in_channels=16, out_channels=1, kernel_size=(2,16,16), stride=(4,16,16), bias=False)
+        self.upsample4_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(2,16,16), stride=(4,16,16), bias=False)
 
         self.fuse = torch.nn.Conv3d(64, 1, kernel_size=1, stride=1, padding=0)
+
+        self._initialize_weights()
 
     def forward(self, inp):
 
@@ -271,7 +277,7 @@ class I3D(torch.nn.Module):
         out1 = self.upsample1(side_temp1)
         print(out1.data.shape)
         side.append(out1)
-        out1_ = self.upsample1_(side_temp1)
+        out1_ = self.upsample1_(self.score_dsn1(side_temp1))
         print(out1_.data.shape)
         side_out.append(out1_)
 
@@ -288,7 +294,7 @@ class I3D(torch.nn.Module):
         out2 = self.upsample2(side_temp2)
         print(out2.data.shape)
         side.append(out2)
-        out2_ = self.upsample2_(side_temp2)
+        out2_ = self.upsample2_(self.score_dsn2(side_temp2))
         print(out2_.data.shape)
         side_out.append(out2_)
 
@@ -304,7 +310,7 @@ class I3D(torch.nn.Module):
         out3 = self.upsample3(side_temp3)
         print(out3.data.shape)
         side.append(out3)
-        out3_ = self.upsample3_(side_temp3)
+        out3_ = self.upsample3_(self.score_dsn3(side_temp3))
         print(out3_.data.shape)
         side_out.append(out3_)
 
@@ -326,7 +332,7 @@ class I3D(torch.nn.Module):
         out4 = self.upsample4(side_temp4)
         print(out4.data.shape)
         side.append(out4)
-        out4_ = self.upsample4_(side_temp4)
+        out4_ = self.upsample4_(self.score_dsn4(side_temp4))
         print(out4_.data.shape)
         side_out.append(out4_)
 
@@ -337,28 +343,58 @@ class I3D(torch.nn.Module):
         side_out.append(out_upsample)
         print(len(side_out))
 
-        out = self.maxPool3d_5a_2x2(out) #832x8x7x7
-        print(out.data.shape)
-        out = self.mixed_5b(out) #832x8x7x7
-        print(out.data.shape)
-        out = self.mixed_5c(out) #1024x8x7x7
-        print(out.data.shape)
-        out = self.avg_pool(out) #1024x8x1x1
-        print(out.data.shape)
-        out = self.dropout(out)
-        print(out.data.shape)
-        out = self.conv3d_0c_1x1(out)
-        print(out.data.shape)
-        out = out.squeeze(3)
-        print(out.data.shape)
-        out = out.squeeze(3)
-        print(out.data.shape)
-        out = out.mean(2)
-        print(out.data.shape)
-        out_logits = out
-        print(out_logits.data.shape)
-        out = self.softmax(out_logits)
-        return out, out_logits
+        if False:
+            out = self.maxPool3d_5a_2x2(out) #832x8x7x7
+            out = self.mixed_5b(out) #832x8x7x7
+            out = self.mixed_5c(out) #1024x8x7x7
+            out = self.avg_pool(out) #1024x8x1x1
+            out = self.dropout(out)
+            out = self.conv3d_0c_1x1(out)
+            out = out.squeeze(3)
+            out = out.squeeze(3)
+            out = out.mean(2)
+            out_logits = out
+            out = self.softmax(out_logits)
+            return out, out_logits
+        return side_out
+
+    def upsample_filt(self, size):
+        factor = (size + 1) // 2
+        if size % 2 == 1:
+            center = factor - 1
+        else:
+            center = factor - 0.5
+        og = np.ogrid[:size, :size]
+        return (1 - abs(og[0] - center) / factor) * \
+               (1 - abs(og[1] - center) / factor)
+
+    def interp_surgery(self, layer):
+        m, k, f, h, w = layer.weight.data.size()
+        if m != k:
+            print('input + output channels need to be the same')
+            raise ValueError
+        if h != w:
+            print('filters need to be square')
+            raise ValueError
+        filt = self.upsample_filt(h)
+
+        for i in range(m):
+            for j in range(f):
+                layer.weight[i, i, j, :, :].data.copy_(torch.from_numpy(filt))
+
+        return layer.weight.data
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, torch.nn.ConvTranspose3d):
+                m.weight.data.zero_()
+                m.weight.data = self.interp_surgery(m)
+            elif isinstance(m, torch.nn.Conv3d):
+                m.weight.data.normal_(0, 0.001)
+                if m.bias is not None:
+                    m.bias.data.zero_()
+        state_dict = torch.load('model/model_rgb.pth')
+        self.load_state_dict(state_dict, False)
 
     def load_tf_weights(self, sess):
         state_dict = {}
