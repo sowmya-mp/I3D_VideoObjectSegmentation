@@ -115,6 +115,11 @@ class VideoResize(object):
                     res.append(spy.imresize(tmp[frameIndex, :, :, :], (self.sizes[0], self.sizes[1]), interp=flagval))
             tmp = np.array(res,dtype="float32")
             tmp = np.transpose(tmp, (0, 3, 1, 2))
+
+            #siddhant: We are normalizing here because i3d expects normalized image values
+            # For Ground truth the imresize function converts 0-1 values to 0-255, so we are converting it back
+            tmp = np.array(tmp, dtype=np.float32)
+            tmp = tmp / np.max([tmp.max(), 1e-8])
             sample[elem] = tmp
 
         return sample

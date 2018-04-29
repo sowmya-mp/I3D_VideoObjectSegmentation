@@ -255,8 +255,8 @@ class I3D(torch.nn.Module):
 
         self.side_prep4 = torch.nn.Conv3d(in_channels=832, out_channels=16, kernel_size=1, stride=1, bias=False)
         self.score_dsn4 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
-        self.upsample4 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(2,16,16), stride=(4,16,16), bias=False)
-        self.upsample4_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(2,16,16), stride=(4,16,16), bias=False)
+        self.upsample4 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(4,16,16), stride=(4,16,16), bias=False)
+        self.upsample4_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(4,16,16), stride=(4,16,16), bias=False)
 
         self.fuse = torch.nn.Conv3d(64, 1, kernel_size=1, stride=1, padding=0)
 

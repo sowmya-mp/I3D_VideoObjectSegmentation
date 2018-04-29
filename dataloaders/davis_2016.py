@@ -100,14 +100,27 @@ class DAVIS2016(Dataset):
         seq_labels = list(map(lambda x: os.path.join('Annotations/480p/', str(curr_seq_name.strip()), x), names_label))
 
 
-        imgSize = self.get_img_size();
-        imgs = np.zeros([len(seq_img_list),3,imgSize[0],imgSize[1]],dtype=np.float32);
-        gts = np.zeros([len(seq_img_list),1,imgSize[0],imgSize[1]],dtype=np.float32);
+        imgSize = self.get_img_size()
 
-        for ctr in range(len(seq_img_list)):
-            c_img = cv2.imread(os.path.join(self.db_root_dir, seq_img_list[ctr]))
+        totalNumOfFrames = len(seq_img_list)
+        if totalNumOfFrames%4!=0:
+            totalNumOfFrames = totalNumOfFrames + (4-totalNumOfFrames%4)
+
+        imgs = np.zeros([totalNumOfFrames,3,imgSize[0],imgSize[1]],dtype=np.float32)
+        gts = np.zeros([totalNumOfFrames,1,imgSize[0],imgSize[1]],dtype=np.float32)
+
+        for ctr in range(totalNumOfFrames):
+
+            if ctr >= len(seq_img_list):
+                img_name = seq_img_list[len(seq_img_list)-1]
+                label_name = seq_labels[len(seq_img_list)-1]
+            else:
+                img_name = seq_img_list[ctr]
+                label_name = seq_labels[ctr]
+
+            c_img = cv2.imread(os.path.join(self.db_root_dir, img_name))
             #c_img = np.subtract(c_img, np.array(self.meanval, dtype=np.float32))
-            c_label = cv2.imread(os.path.join(self.db_root_dir, seq_labels[ctr]), 0)
+            c_label = cv2.imread(os.path.join(self.db_root_dir, label_name), 0)
             c_img = np.transpose(c_img, (2, 0, 1))
 
             #siddhanj:checkpoint c_img needs to be transposed
@@ -117,7 +130,6 @@ class DAVIS2016(Dataset):
 
             imgs[ctr,:,:,:] = c_img
             gts[ctr,:,:,:] = c_label
-
 
         imgs = np.array(imgs, dtype=np.float32)
 

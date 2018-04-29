@@ -21,6 +21,7 @@ from dataloaders import custom_transforms as tr
 import networks.i3d_osvos as vos
 from layers.osvos_layers import class_balanced_cross_entropy_loss
 from mypath import Path
+import numpy as np
 
 # Select which GPU, -1 if CPU
 gpu_id = -1
@@ -117,7 +118,7 @@ trainloader = DataLoader(db_train, batch_size=p['trainBatch'], shuffle=True, num
 db_test = db.DAVIS2016(train=False, db_root_dir=db_root_dir, transform=tr.ToTensor())
 testloader = DataLoader(db_test, batch_size=testBatch, shuffle=False, num_workers=2)
 
-num_img_tr = len(trainloader)
+num_img_tr = 1
 num_img_ts = len(testloader)
 running_loss_tr = [0] * 5
 running_loss_ts = [0] * 5
@@ -136,11 +137,12 @@ for epoch in range(resume_epoch, nEpochs):
 
         # Forward-Backward of the mini-batch
         inputs, gts = Variable(inputs), Variable(gts)
-        inputs = torch.transpose(inputs,1,2)
-        gts = torch.transpose(gts,1, 2)
-        print(inputs.shape)
+
+        inputs = torch.transpose(inputs, 1, 2)
+        gts = torch.transpose(gts, 1, 2)
         if gpu_id >= 0:
             inputs, gts = inputs.cuda(), gts.cuda()
+
 
         outputs = netRGB.forward(inputs)
 
@@ -156,7 +158,7 @@ for epoch in range(resume_epoch, nEpochs):
         if ii % num_img_tr == num_img_tr - 1:
             running_loss_tr = [x / num_img_tr for x in running_loss_tr]
             loss_tr.append(running_loss_tr[-1])
-            writer.add_scalar('data/total_loss_epoch', running_loss_tr[-1], epoch)
+            #writer.add_scalar('data/total_loss_epoch', running_loss_tr[-1], epoch)
             print('[Epoch: %d, numImages: %5d]' % (epoch, ii + 1))
             for l in range(0, len(running_loss_tr)):
                 print('Loss %d: %f' % (l, running_loss_tr[l]))
@@ -165,6 +167,7 @@ for epoch in range(resume_epoch, nEpochs):
             stop_time = timeit.default_timer()
             print("Execution time: " + str(stop_time - start_time))
 
+        print('[Siddhant|Epoch: %d, loss: %f]' % (epoch, loss))
         # Backward the averaged gradient
         loss /= nAveGrad
         loss.backward()
@@ -172,7 +175,7 @@ for epoch in range(resume_epoch, nEpochs):
 
         # Update the weights once in nAveGrad forward passes
         if aveGrad % nAveGrad == 0:
-            writer.add_scalar('data/total_loss_iter', loss.data[0], ii + num_img_tr * epoch)
+        #    writer.add_scalar('data/total_loss_iter', loss.data[0], ii + num_img_tr * epoch)
             optimizer.step()
             optimizer.zero_grad()
             aveGrad = 0
