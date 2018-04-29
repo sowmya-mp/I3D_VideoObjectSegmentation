@@ -6,6 +6,7 @@ import socket
 import timeit
 from datetime import datetime
 from tensorboardX import SummaryWriter
+import numpy as np
 
 # PyTorch includes
 import torch
@@ -21,7 +22,8 @@ from dataloaders import custom_transforms as tr
 import networks.i3d_osvos as vos
 from layers.osvos_layers import class_balanced_cross_entropy_loss
 from mypath import Path
-import numpy as np
+from logger import Logger
+
 
 # Select which GPU, -1 if CPU
 gpu_id = -1
@@ -42,7 +44,7 @@ nTestInterval = 5  # Run on test set every nTestInterval epochs
 db_root_dir = Path.db_root_dir()
 vis_net = 0  # Visualize the network?
 snapshot = 40  # Store a model every snapshot epochs
-nAveGrad = 10
+nAveGrad = 1
 train_rgb = True
 save_dir = Path.save_root_dir()
 if not os.path.exists(save_dir):
@@ -71,11 +73,14 @@ else:
 
 # Logging into Tensorboard
 
-'''
-log_dir = os.path.join(save_dir, 'runs', datetime.now().strftime('%b%d_%H-%M-%S') + '_' + socket.gethostname())
-writer = SummaryWriter(log_dir=log_dir, comment='-parent')
-y = netRGB.forward(Variable(torch.randn(1, 3, 70, 224, 224)))
-writer.add_graph(netRGB, y[-1])
+#log_dir = os.path.join(save_dir, 'runs', datetime.now().strftime('%b%d_%H-%M-%S') + '_' + socket.gethostname())
+#writer = SummaryWriter(log_dir=log_dir, comment='-parent')
+#y = netRGB.forward(Variable(torch.randn(1, 3, 72, 224, 224)))
+#writer.add_graph(netRGB, y[-1])
+
+
+tboardLogger = Logger('../logs/tensorboardLogs', 'train_parent')
+
 '''
 
 # Visualize the network
@@ -91,7 +96,7 @@ if gpu_id >= 0:
     torch.cuda.set_device(device=gpu_id)
     netRGB.cuda()
     netFlow.cuda()
-'''
+
 
 # Use the following optimizer
 lr = 1e-8
@@ -128,6 +133,7 @@ aveGrad = 0
 
 print("Training Network")
 # Main Training and Testing Loop
+start_step = 0
 for epoch in range(resume_epoch, nEpochs):
     start_time = timeit.default_timer()
     # One training epoch
@@ -150,7 +156,7 @@ for epoch in range(resume_epoch, nEpochs):
 
         losses = [0] * len(outputs)
         for i in range(0, len(outputs)):
-            losses[i] = class_balanced_cross_entropy_loss(outputs[i], gts, size_average=False)
+            losses[i] = class_balanced_cross_entropy_loss(outputs[i], gts, size_average=True)
             running_loss_tr[i] += losses[i].data[0]
         loss = (1 - epoch / nEpochs)*sum(losses[:-1]) + losses[-1]
 
@@ -158,7 +164,7 @@ for epoch in range(resume_epoch, nEpochs):
         if ii % num_img_tr == num_img_tr - 1:
             running_loss_tr = [x / num_img_tr for x in running_loss_tr]
             loss_tr.append(running_loss_tr[-1])
-            #writer.add_scalar('data/total_loss_epoch', running_loss_tr[-1], epoch)
+         #   writer.add_scalar('data/total_loss_epoch', running_loss_tr[-1], epoch)
             print('[Epoch: %d, numImages: %5d]' % (epoch, ii + 1))
             for l in range(0, len(running_loss_tr)):
                 print('Loss %d: %f' % (l, running_loss_tr[l]))
@@ -172,14 +178,15 @@ for epoch in range(resume_epoch, nEpochs):
         loss /= nAveGrad
         loss.backward()
         aveGrad += 1
-
+        tboardLogger.scalar_summary("training_loss",loss.data[0],start_step+ii)
         # Update the weights once in nAveGrad forward passes
-        if aveGrad % nAveGrad == 0:
+        # if aveGrad % nAveGrad == 0:
         #    writer.add_scalar('data/total_loss_iter', loss.data[0], ii + num_img_tr * epoch)
-            optimizer.step()
-            optimizer.zero_grad()
-            aveGrad = 0
+        optimizer.step()
+        optimizer.zero_grad()
+        aveGrad = 0
 
+    start_step = start_step +  len(trainloader)
     # Save the model
     if (epoch % snapshot) == snapshot - 1 and epoch != 0:
         torch.save(netRGB.state_dict(), os.path.join(save_dir, modelName + '_epoch-' + str(epoch) + '.pth'))
