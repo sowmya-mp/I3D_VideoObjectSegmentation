@@ -144,7 +144,8 @@ if __name__ == '__main__':
 
     #siddhanj: scale messes is it up for somereason. Investigate into this later
     #transforms = transforms.Compose([tr.RandomHorizontalFlip(), tr.Resize(scales=[0.5, 0.8, 1]), tr.ToTensor()])
-    transforms = transforms.Compose([tr.ToTensor()])
+    transforms = transforms.Compose([tr.VideoResize (sizes=[224, 224]) , tr.ToTensor()])
+    #transforms = transforms.Compose([tr.ToTensor()])
 
     dataset = DAVIS2016(db_root_dir='../Data/DAVIS',
                         train=True, transform=transforms)
@@ -155,10 +156,9 @@ if __name__ == '__main__':
         img = data['image'][0,0,:,:,:]
         label = data['gt'][0,0,:,:,:]
 
-        img = np.transpose(img,(1,2,0))
-        label = np.transpose(label,(1,2,0))
-        plt.imshow( overlay_mask( im_normalize( img.numpy() ), tens2image(label) ) )
-        if i == 10:
+        plt.imshow( overlay_mask( tens2image(im_normalize(img)), tens2image(label) ) )
+
+        if i == 1:
             break
 
     plt.show(block=True)

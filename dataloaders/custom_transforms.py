@@ -2,6 +2,7 @@ import random
 import cv2
 import numpy as np
 import torch
+import scipy.misc as spy
 
 
 class ScaleNRotate(object):
@@ -79,6 +80,41 @@ class Resize(object):
 
             tmp = cv2.resize(tmp, None, fx=sc, fy=sc, interpolation=flagval)
 
+            sample[elem] = tmp
+
+        return sample
+
+
+class VideoResize(object):
+    """Resizes the set of videos frames and the ground truths to specified pixel values.
+    Args:
+        size (list): the list of sizes
+    """
+    def __init__(self, sizes=[224, 224]):
+        self.sizes = sizes
+
+    def __call__(self, sample):
+        print(sample.keys())
+        for elem in sample.keys():
+            if 'fname' in elem:
+                continue
+            tmp = sample[elem]
+
+
+            flagval = 'bilinear'
+
+            num_frames = tmp.shape[0]
+            tmp = np.transpose(tmp, (0, 2, 3, 1))
+            res = []
+            isGT = tmp.shape[3] == 1
+            for frameIndex in range(num_frames):
+                if isGT:
+                    toAppend = spy.imresize(tmp[frameIndex, :, :, 0], (self.sizes[0], self.sizes[1]), interp=flagval)
+                    res.append(np.reshape(toAppend,(self.sizes[0], self.sizes[1],1)))
+                else:
+                    res.append(spy.imresize(tmp[frameIndex, :, :, :], (self.sizes[0], self.sizes[1]), interp=flagval))
+            tmp = np.array(res,dtype="float32")
+            tmp = np.transpose(tmp, (0, 3, 1, 2))
             sample[elem] = tmp
 
         return sample

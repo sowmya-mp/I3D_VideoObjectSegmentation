@@ -23,7 +23,7 @@ from layers.osvos_layers import class_balanced_cross_entropy_loss
 from mypath import Path
 
 # Select which GPU, -1 if CPU
-gpu_id = 0
+gpu_id = -1
 print('Using GPU: {} '.format(gpu_id))
 
 # Setting of parameters
@@ -69,10 +69,13 @@ else:
 '''
 
 # Logging into Tensorboard
+
+'''
 log_dir = os.path.join(save_dir, 'runs', datetime.now().strftime('%b%d_%H-%M-%S') + '_' + socket.gethostname())
 writer = SummaryWriter(log_dir=log_dir, comment='-parent')
-y = netRGB.forward(Variable(torch.randn(1, 3, 480, 854)))
+y = netRGB.forward(Variable(torch.randn(1, 3, 70, 224, 224)))
 writer.add_graph(netRGB, y[-1])
+'''
 
 # Visualize the network
 if vis_net:
@@ -82,11 +85,12 @@ if vis_net:
     g = viz.make_dot(y, netRGB.state_dict())
     g.view()
 
+'''
 if gpu_id >= 0:
     torch.cuda.set_device(device=gpu_id)
     netRGB.cuda()
     netFlow.cuda()
-
+'''
 
 # Use the following optimizer
 lr = 1e-8
@@ -98,9 +102,13 @@ optimizer = optim.SGD(netRGB.parameters(), lr, momentum=_momentum,
 
 # Preparation of the data loaders
 # Define augmentation transformations as a composition
-composed_transforms = transforms.Compose([tr.RandomHorizontalFlip(),
-                                          tr.ScaleNRotate(rots=(-30, 30), scales=(.75, 1.25)),
+# composed_transforms = transforms.Compose([tr.RandomHorizontalFlip(),
+#                                           tr.ScaleNRotate(rots=(-30, 30), scales=(.75, 1.25)),
+#                                           tr.ToTensor()])
+
+composed_transforms = transforms.Compose([tr.VideoResize(),
                                           tr.ToTensor()])
+
 # Training dataset and its iterator
 db_train = db.DAVIS2016(train=True, inputRes=None, db_root_dir=db_root_dir, transform=composed_transforms)
 trainloader = DataLoader(db_train, batch_size=p['trainBatch'], shuffle=True, num_workers=2)
@@ -128,6 +136,9 @@ for epoch in range(resume_epoch, nEpochs):
 
         # Forward-Backward of the mini-batch
         inputs, gts = Variable(inputs), Variable(gts)
+        inputs = torch.transpose(inputs,1,2)
+        gts = torch.transpose(gts,1, 2)
+        print(inputs.shape)
         if gpu_id >= 0:
             inputs, gts = inputs.cuda(), gts.cuda()
 
