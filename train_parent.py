@@ -37,7 +37,7 @@ p = {
 }
 
 # # Setting other parameters
-resume_epoch = 0  # Default is 0, change if want to resume
+resume_epoch = 239  # Default is 0, change if want to resume
 nEpochs = 240  # Number of epochs for training (500.000/2079)
 useTest = True  # See evolution of the test set when training?
 testBatch = 1  # Testing Batch
@@ -54,11 +54,11 @@ if not os.path.exists(save_dir):
 # Network definition
 #siddhanj: here number of classes do not matter, as that just helps choose what kind of i3d video we want to use
 modelName = 'parent'
-if resume_epoch == 0:
-    if train_rgb:
-        netRGB = vos.I3D(num_classes=400, modality='rgb')
-    else:
-        netFlow = vos.I3D(num_classes=400, modality='flow')
+
+if train_rgb:
+    netRGB = vos.I3D(num_classes=400, modality='rgb')
+else:
+    netFlow = vos.I3D(num_classes=400, modality='flow')
 
 '''
 # REMOVING FUNCTIONALITY FOR RESUMING TRAINING FOR NOW
@@ -71,6 +71,9 @@ else:
                    map_location=lambda storage, loc: storage))
                    
 '''
+
+
+#netRGB.load_state_dict(torch.load('models/parent_epoch-239.pth'),map_location=lambda storage, loc: storage)
 
 # Logging into Tensorboard
 
@@ -102,7 +105,7 @@ if gpu_id >= 0:
 
 
 # Use the following optimizer
-lr = 1e-8
+lr = 1e-2
 wd = 0.0002
 _momentum = 0.9
 optimizer = optim.SGD(netRGB.parameters(), lr, momentum=_momentum,
@@ -115,8 +118,10 @@ optimizer = optim.SGD(netRGB.parameters(), lr, momentum=_momentum,
 #                                           tr.ScaleNRotate(rots=(-30, 30), scales=(.75, 1.25)),
 #                                           tr.ToTensor()])
 
-composed_transforms = transforms.Compose([tr.VideoResize(),
-                                          tr.ToTensor()])
+#composed_transforms = transforms.Compose([tr.VideoResize(),
+#                                          tr.ToTensor()])
+
+composed_transforms = transforms.Compose([tr.ToTensor()])
 
 # Training dataset and its iterator
 db_train = db.DAVIS2016(train=True, inputRes=None, db_root_dir=db_root_dir, transform=composed_transforms)
@@ -170,6 +175,7 @@ for epoch in range(resume_epoch, nEpochs):
             for imageIndex in range(10):
                 inputImage = random_inputs[imageIndex, :, :, :]
                 inputImage = np.transpose(inputImage, (1, 2, 0))
+                inputImage = inputImage[:,:,::-1]
                 images_list.append(inputImage)
                 mask = random_outputs[imageIndex, 0, :, :]
                 mask = 1 / (1 + np.exp(-mask))
