@@ -13,6 +13,7 @@ class DAVIS2016(Dataset):
     """DAVIS 2016 dataset constructed using the PyTorch built-in functionalities"""
 
     def __init__(self, train=True,
+                 train_online=False,
                  inputRes=None,
                  db_root_dir='/media/eec/external/Databases/Segmentation/DAVIS-2016',
                  year = '2016',
@@ -28,7 +29,7 @@ class DAVIS2016(Dataset):
         self.transform = transform
         self.meanval = meanval
         self.seq_name = seq_name
-
+        self.train_online = train_online
         if self.train:
             fname = 'train'
         else:
@@ -52,16 +53,16 @@ class DAVIS2016(Dataset):
                     lab_path = list(map(lambda x: os.path.join('Annotations/480p/', seq.strip(), x), lab))
                     labels.extend(lab_path)
         else:
-
+            seqs = [seq_name]
             # Initialize the per sequence images for online training
             names_img = np.sort(os.listdir(os.path.join(db_root_dir, 'JPEGImages/480p/', str(seq_name))))
             img_list = list(map(lambda x: os.path.join('JPEGImages/480p/', str(seq_name), x), names_img))
             name_label = np.sort(os.listdir(os.path.join(db_root_dir, 'Annotations/480p/', str(seq_name))))
             labels = [os.path.join('Annotations/480p/', str(seq_name), name_label[0])]
             labels.extend([None]*(len(names_img)-1))
-            if self.train:
-                img_list = [img_list[0]]
-                labels = [labels[0]]
+            # if self.train:
+            #     img_list = [img_list[0]]
+            #     labels = [labels[0]]
 
         assert (len(labels) == len(img_list))
 
@@ -74,7 +75,11 @@ class DAVIS2016(Dataset):
         return len(self.seqs)
 
     def __getitem__(self, idx):
-        img, gt = self.make_img_gt_pair(idx)
+
+        if self.train_online:
+            img,gt = self.make_img_gt_pair_train_online()
+        else:
+            img, gt = self.make_img_gt_pair(idx)
 
         sample = {'image': img, 'gt': gt}
 
@@ -87,13 +92,64 @@ class DAVIS2016(Dataset):
 
         return sample
 
+    def make_img_gt_pair_train_online(self):
+        curr_seq_name = self.seqs[0]
+        names_img = np.sort(os.listdir(os.path.join(self.db_root_dir, 'JPEGImages/480p/', str(curr_seq_name.strip()))))
+        seq_img_list = list(map(lambda x: os.path.join('JPEGImages/480p/', str(curr_seq_name.strip()), x), names_img))
+
+        names_label = np.sort(
+            os.listdir(os.path.join(self.db_root_dir, 'Annotations/480p/', str(curr_seq_name.strip()))))
+
+        seq_labels = list(map(lambda x: os.path.join('Annotations/480p/', str(curr_seq_name.strip()), x), names_label))
+
+        imgSize = self.get_img_size()
+
+        totalNumOfFrames = len(seq_img_list)
+        if totalNumOfFrames % 4 != 0:
+            totalNumOfFrames = totalNumOfFrames + (4 - totalNumOfFrames % 4)
+
+        imgs = np.zeros([totalNumOfFrames, 3, imgSize[0], imgSize[1]], dtype=np.float32)
+        gts = np.zeros([totalNumOfFrames, 1, imgSize[0], imgSize[1]], dtype=np.float32)
+
+        for ctr in range(totalNumOfFrames):
+
+            if ctr >= 1:
+                img_name = seq_img_list[0]
+                label_name = seq_labels[0]
+            else:
+                img_name = seq_img_list[ctr]
+                label_name = seq_labels[ctr]
+
+            c_img = cv2.imread(os.path.join(self.db_root_dir, img_name))
+            # c_img = np.subtract(c_img, np.array(self.meanval, dtype=np.float32))
+            c_label = cv2.imread(os.path.join(self.db_root_dir, label_name), 0)
+            c_img = np.transpose(c_img, (2, 0, 1))
+
+            # siddhanj:checkpoint c_img needs to be transposed
+            if self.inputRes is not None:
+                c_img = imresize(c_img, self.inputRes)
+                c_label = imresize(c_label, self.inputRes, interp='nearest')
+
+            imgs[ctr, :, :, :] = c_img
+            gts[ctr, :, :, :] = c_label
+
+        imgs = np.array(imgs, dtype=np.float32)
+
+        gts = np.array(gts, dtype=np.float32)
+        gts = gts / np.max([gts.max(), 1e-8])
+
+        return imgs, gts
+
     def make_img_gt_pair(self, idx):
         """
         Make the images-ground-truth pair
         """
+
         curr_seq_name = self.seqs[idx]
         names_img = np.sort(os.listdir(os.path.join(self.db_root_dir, 'JPEGImages/480p/', str(curr_seq_name.strip()))))
         seq_img_list = list(map(lambda x: os.path.join('JPEGImages/480p/', str(curr_seq_name.strip()), x), names_img))
+
+
 
         names_label = np.sort(os.listdir(os.path.join(self.db_root_dir, 'Annotations/480p/', str(curr_seq_name.strip()))))
 
@@ -160,7 +216,7 @@ if __name__ == '__main__':
     #transforms = transforms.Compose([tr.ToTensor()])
 
     dataset = DAVIS2016(db_root_dir='../Data/DAVIS',
-                        train=True, transform=transforms)
+                        train=False, transform=transforms, train_online = True, seq_name='parkour')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=1)
 
     for i, data in enumerate(dataloader):
@@ -170,7 +226,7 @@ if __name__ == '__main__':
 
         plt.imshow( overlay_mask( tens2image(im_normalize(img)), tens2image(label) ) )
 
-        if i == 1:
+        if i == 10:
             break
 
     plt.show(block=True)
