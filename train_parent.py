@@ -7,7 +7,7 @@ import timeit
 from datetime import datetime
 from tensorboardX import SummaryWriter
 import numpy as np
-
+import matplotlib.pyplot as plt
 # PyTorch includes
 import torch
 from torch.autograd import Variable
@@ -27,7 +27,7 @@ from dataloaders import helpers
 
 
 # Select which GPU, -1 if CPU
-gpu_id = -1
+gpu_id = 0
 print('Using GPU: {} '.format(gpu_id))
 
 # Setting of parameters
@@ -37,8 +37,8 @@ p = {
 }
 
 # # Setting other parameters
-resume_epoch = 239  # Default is 0, change if want to resume
-nEpochs = 240  # Number of epochs for training (500.000/2079)
+resume_epoch = 0  # Default is 0, change if want to resume
+nEpochs = 500  # Number of epochs for training (500.000/2079)
 useTest = True  # See evolution of the test set when training?
 testBatch = 1  # Testing Batch
 nTestInterval = 5  # Run on test set every nTestInterval epochs
@@ -73,7 +73,7 @@ else:
 '''
 
 
-#netRGB.load_state_dict(torch.load('models/parent_epoch-239.pth'),map_location=lambda storage, loc: storage)
+#netRGB.load_state_dict(torch.load('models/parent_epoch-479.pth'),False)
 
 # Logging into Tensorboard
 
@@ -118,10 +118,10 @@ optimizer = optim.SGD(netRGB.parameters(), lr, momentum=_momentum,
 #                                           tr.ScaleNRotate(rots=(-30, 30), scales=(.75, 1.25)),
 #                                           tr.ToTensor()])
 
-#composed_transforms = transforms.Compose([tr.VideoResize(),
-#                                          tr.ToTensor()])
+composed_transforms = transforms.Compose([tr.VideoResize(),
+                                          tr.ToTensor()])
 
-composed_transforms = transforms.Compose([tr.ToTensor()])
+#composed_transforms = transforms.Compose([tr.ToTensor()])
 
 # Training dataset and its iterator
 db_train = db.DAVIS2016(train=True, inputRes=None, db_root_dir=db_root_dir, transform=composed_transforms)
@@ -138,6 +138,13 @@ running_loss_ts = [0] * 5
 loss_tr = []
 loss_ts = []
 aveGrad = 0
+
+
+def getHeatMapFrom2DArray(inArray):
+    inArray_ = (inArray - np.min(inArray))/(np.max(inArray) - np.min(inArray))
+    cm = plt.get_cmap('jet')
+    retValue = cm(inArray_)
+    return retValue
 
 print("Training Network")
 # Main Training and Testing Loop
@@ -178,7 +185,10 @@ for epoch in range(resume_epoch, nEpochs):
                 inputImage = inputImage[:,:,::-1]
                 images_list.append(inputImage)
                 mask = random_outputs[imageIndex, 0, :, :]
+		heatMap = getHeatMapFrom2DArray(mask)
+		images_list.append(heatMap)
                 mask = 1 / (1 + np.exp(-mask))
+		print('max: ' + str(np.max(mask)) + 'min: ' + str(np.min(mask)))
                 mask_ = np.greater(mask, 0.5).astype(np.float32)
                 overlayedImage = helpers.overlay_mask(inputImage, mask_)
                 overlayedImage = overlayedImage * 255
@@ -257,4 +267,4 @@ for epoch in range(resume_epoch, nEpochs):
                     print('***Testing *** Loss %d: %f' % (l, running_loss_ts[l]))
                     running_loss_ts[l] = 0
     '''
-writer.close()
+

@@ -240,23 +240,23 @@ class I3D(torch.nn.Module):
         #Upsampling Module
         self.side_prep1 = torch.nn.Conv3d(in_channels=64, out_channels=16, kernel_size=1, stride=1, bias=False)
         self.score_dsn1 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
-        self.upsample1 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(2,2,2), stride=(2,2,2), bias=False)
-        self.upsample1_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(2,2,2), stride=(2,2,2), bias=False)
+        self.upsample1 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(4,4,4), stride=(2,2,2),padding=(1,1,1), bias=False)
+        self.upsample1_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(4,4,4), stride=(2,2,2), padding=(1,1,1), bias=False)
 
         self.side_prep2 = torch.nn.Conv3d(in_channels=192, out_channels=16, kernel_size=1, stride=1, bias=False)
         self.score_dsn2 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
-        self.upsample2 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(2,4,4), stride=(2,4,4), bias=False)
-        self.upsample2_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(2,4,4), stride=(2,4,4), bias=False)
+        self.upsample2 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(4,8,8), stride=(2,4,4),padding=(1,2,2), bias=False)
+        self.upsample2_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(4,8,8), stride=(2,4,4),padding=(1,2,2), bias=False)
 
         self.side_prep3 = torch.nn.Conv3d(in_channels=480, out_channels=16, kernel_size=1, stride=1, bias=False)
         self.score_dsn3 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
-        self.upsample3 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(2,8,8), stride=(2,8,8), bias=False)
-        self.upsample3_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(2,8,8), stride=(2,8,8), bias=False)
+        self.upsample3 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(4,16,16), stride=(2,8,8),padding=(1,4,4), bias=False)
+        self.upsample3_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(4,16,16), stride=(2,8,8), padding=(1,4,4), bias=False)
 
         self.side_prep4 = torch.nn.Conv3d(in_channels=832, out_channels=16, kernel_size=1, stride=1, bias=False)
         self.score_dsn4 = torch.nn.Conv3d(in_channels=16, out_channels=1, kernel_size=1, stride=1, padding=0)
-        self.upsample4 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(4,16,16), stride=(4,16,16), bias=False)
-        self.upsample4_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(4,16,16), stride=(4,16,16), bias=False)
+        self.upsample4 = torch.nn.ConvTranspose3d(in_channels=16, out_channels=16, kernel_size=(8,32,32), stride=(4,16,16),padding=(2,8,8), bias=False)
+        self.upsample4_ = torch.nn.ConvTranspose3d(in_channels=1, out_channels=1, kernel_size=(8,32,32), stride=(4,16,16), padding=(2,8,8), bias=False)
 
         self.fuse = torch.nn.Conv3d(64, 1, kernel_size=1, stride=1, padding=0)
 
@@ -268,81 +268,81 @@ class I3D(torch.nn.Module):
         side_out = []
 
         # Preprocessing
-        print(inp.data.shape)
+        #print(inp.data.shape)
         out = self.conv3d_1a_7x7(inp) #64x32x112x112
-        print(out.data.shape)
+        #print(out.data.shape)
 
         side_temp1 = self.side_prep1(out)
-        print(side_temp1.data.shape)
+        #print(side_temp1.data.shape)
         out1 = self.upsample1(side_temp1)
-        print(out1.data.shape)
+        #print(out1.data.shape)
         side.append(out1)
         out1_ = self.upsample1_(self.score_dsn1(side_temp1))
-        print(out1_.data.shape)
+        #print(out1_.data.shape)
         side_out.append(out1_)
 
         out = self.maxPool3d_2a_3x3(out) #64x32x56x56
-        print(out.data.shape)
+        #print(out.data.shape)
         out = self.conv3d_2b_1x1(out) #64x32x56x56
-        print(out.data.shape)
+        #print(out.data.shape)
 
         out = self.conv3d_2c_3x3(out) #192x64x224x224
-        print(out.data.shape)
+        #print(out.data.shape)
 
         side_temp2 = self.side_prep2(out)
-        print(side_temp2.data.shape)
+        #print(side_temp2.data.shape)
         out2 = self.upsample2(side_temp2)
 
-        print(out2.data.shape)
+        #print(out2.data.shape)
         side.append(out2)
         out2_ = self.upsample2_(self.score_dsn2(side_temp2))
-        print(out2_.data.shape)
+        #print(out2_.data.shape)
         side_out.append(out2_)
 
         out = self.maxPool3d_3a_3x3(out) #192x32x28x28
-        print(out.data.shape)
+        #print(out.data.shape)
         out = self.mixed_3b(out) #256x32x28x28
-        print(out.data.shape)
+        #print(out.data.shape)
         out = self.mixed_3c(out) #480x32x28x28
-        print(out.data.shape)
+        #print(out.data.shape)
 
         side_temp3 = self.side_prep3(out)
-        print(side_temp3.data.shape)
+        #print(side_temp3.data.shape)
         out3 = self.upsample3(side_temp3)
-        print(out3.data.shape)
+        #print(out3.data.shape)
         side.append(out3)
         out3_ = self.upsample3_(self.score_dsn3(side_temp3))
-        print(out3_.data.shape)
+        #print(out3_.data.shape)
         side_out.append(out3_)
 
         out = self.maxPool3d_4a_3x3(out) #480x16x14x14
-        print(out.data.shape)
+        #print(out.data.shape)
         out = self.mixed_4b(out) #512x16x14x14
-        print(out.data.shape)
+        #print(out.data.shape)
         out = self.mixed_4c(out) #512x16x14x14
-        print(out.data.shape)
+        #print(out.data.shape)
         out = self.mixed_4d(out) #512x16x14x14
-        print(out.data.shape)
+        #print(out.data.shape)
         out = self.mixed_4e(out) #528x16x14x14
-        print(out.data.shape)
+        #print(out.data.shape)
         out = self.mixed_4f(out) #832x16x14x14
-        print(out.data.shape)
+        #print(out.data.shape)
 
         side_temp4 = self.side_prep4(out)
-        print(side_temp4.data.shape)
+        #print(side_temp4.data.shape)
         out4 = self.upsample4(side_temp4)
-        print(out4.data.shape)
+        #print(out4.data.shape)
         side.append(out4)
         out4_ = self.upsample4_(self.score_dsn4(side_temp4))
-        print(out4_.data.shape)
+        #print(out4_.data.shape)
         side_out.append(out4_)
 
         out_upsample = torch.cat(side[:], dim=1)
-        print(out_upsample.data.shape)
+        #print(out_upsample.data.shape)
         out_upsample = self.fuse(out_upsample)
-        print(out_upsample.data.shape)
+        #print(out_upsample.data.shape)
         side_out.append(out_upsample)
-        print(len(side_out))
+        #print(len(side_out))
 
         if False:
             out = self.maxPool3d_5a_2x2(out) #832x8x7x7
@@ -358,6 +358,9 @@ class I3D(torch.nn.Module):
             out = self.softmax(out_logits)
             return out, out_logits
         return side_out
+
+
+
 
     def upsample_filt(self, size):
         factor = (size + 1) // 2
