@@ -23,6 +23,7 @@ import networks.i3d_osvos as vos
 from layers.osvos_layers import class_balanced_cross_entropy_loss
 from mypath import Path
 from logger import Logger
+from dataloaders import helpers
 
 
 # Select which GPU, -1 if CPU
@@ -153,6 +154,30 @@ for epoch in range(resume_epoch, nEpochs):
 
 
         outputs = netRGB.forward(inputs)
+
+        if ii == len(trainloader) - 1:
+            images_list = []
+            number_frames = inputs.shape[2]
+            logging_frames = np.random.choice(range(number_frames), 10, replace=False)
+            inputs_ = torch.transpose(inputs, 1, 2)
+            outputs_ = torch.transpose(outputs[-1], 1, 2)
+            if gpu_id >= 0:
+                random_inputs = inputs_.data.cpu().numpy()[0,logging_frames,:,:,:]
+                random_outputs = outputs_.data.cpu().numpy()[0,logging_frames,:,:,:]
+            else:
+                random_inputs = inputs_.data.numpy()[0,logging_frames,:,:,:]
+                random_outputs = outputs_.data.numpy()[0,logging_frames,:,:,:]
+            for imageIndex in range(10):
+                inputImage = random_inputs[imageIndex, :, :, :]
+                inputImage = np.transpose(inputImage, (1, 2, 0))
+                images_list.append(inputImage)
+                mask = random_outputs[imageIndex, 0, :, :]
+                mask = 1 / (1 + np.exp(-mask))
+                mask_ = np.greater(mask, 0.5).astype(np.float32)
+                overlayedImage = helpers.overlay_mask(inputImage, mask_)
+                overlayedImage = overlayedImage * 255
+                images_list.append(overlayedImage)
+            tboardLogger.image_summary('image_{}'.format(epoch), images_list, epoch)
 
         # Compute the losses, side outputs and fuse
 
