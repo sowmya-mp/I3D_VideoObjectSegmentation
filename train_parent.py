@@ -94,8 +94,10 @@ if vis_net:
 '''
 if gpu_id >= 0:
     torch.cuda.set_device(device=gpu_id)
-    netRGB.cuda()
-    netFlow.cuda()
+    if train_rgb:
+        netRGB.cuda()
+    else:
+        netFlow.cuda()
 
 
 # Use the following optimizer
