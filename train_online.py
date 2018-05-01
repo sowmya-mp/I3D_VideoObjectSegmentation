@@ -123,7 +123,7 @@ composed_transforms = transforms.Compose([tr.VideoResize(),
 # composed_transforms = transforms.Compose([tr.ToTensor()])
 
 # Testing dataset and its iterator
-db_test = db.DAVIS2016(train=False, train_online=True, db_root_dir=db_root_dir, transform=tr.ToTensor(), seq_name=seqname)
+db_test = db.DAVIS2016(train=False, train_online=True, db_root_dir=db_root_dir, transform=composed_transforms, seq_name=seqname)
 testloader = DataLoader(db_test, batch_size=testBatch, shuffle=False, num_workers=2)
 
 num_img_tr = 1
