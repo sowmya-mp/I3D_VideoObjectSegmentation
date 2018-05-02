@@ -24,9 +24,10 @@ from layers.osvos_layers import class_balanced_cross_entropy_loss
 from mypath import Path
 from logger import Logger
 from dataloaders import helpers
+import cv2
 
 # Select which GPU, -1 if CPU
-gpu_id = -1
+gpu_id = 0
 print('Using GPU: {} '.format(gpu_id))
 
 # Setting of parameters
@@ -35,12 +36,12 @@ p = {
     'trainBatch': 1,  # Number of Images in each mini-batch
 }
 
-seqname = 'parkour'
+seqname = 'car-shadow'
 
 
 # # Setting other parameters
 resume_epoch = 0  # Default is 0, change if want to resume
-nEpochs = 100  # Number of epochs for training (500.000/2079)
+nEpochs = 150  # Number of epochs for training (500.000/2079)
 useTest = True  # See evolution of the test set when training?
 testBatch = 1  # Testing Batch
 nTestInterval = 5  # Run on test set every nTestInterval epochs
@@ -55,7 +56,7 @@ if not os.path.exists(save_dir):
 
 # Network definition
 # siddhanj: here number of classes do not matter, as that just helps choose what kind of i3d video we want to use
-modelName = 'parent'
+modelName = 'online'
 
 if train_rgb:
     netRGB = vos.I3D(num_classes=400, modality='rgb')
@@ -74,7 +75,7 @@ else:
 
 '''
 
-# netRGB.load_state_dict(torch.load('models/parent_epoch-479.pth'),False)
+netRGB.load_state_dict(torch.load('models/parent_epoch-600.pth'),False)
 
 # Logging into Tensorboard
 
@@ -179,7 +180,7 @@ for epoch in range(resume_epoch, nEpochs):
             for imageIndex in range(10):
                 inputImage = random_inputs[imageIndex, :, :, :]
                 inputImage = np.transpose(inputImage, (1, 2, 0))
-                inputImage = inputImage[:, :, ::-1]
+                #inputImage = inputImage[:, :, ::-1]
                 images_list.append(inputImage)
                 mask = random_outputs[imageIndex, 0, :, :]
                 heatMap = getHeatMapFrom2DArray(mask)
@@ -189,6 +190,9 @@ for epoch in range(resume_epoch, nEpochs):
                 mask_ = np.greater(mask, 0.5).astype(np.float32)
                 overlayedImage = helpers.overlay_mask(inputImage, mask_)
                 overlayedImage = overlayedImage * 255
+		
+		fileName = 'results_online/' + str(seqname) + '_' + str(imageIndex) + '.jpg'
+		cv2.imwrite(fileName, overlayedImage)                  
                 images_list.append(overlayedImage)
             tboardLogger.image_summary('image_{}'.format(epoch), images_list, epoch)
 
