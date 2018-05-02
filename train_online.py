@@ -36,12 +36,12 @@ p = {
     'trainBatch': 1,  # Number of Images in each mini-batch
 }
 
-seqname = 'car-shadow'
+seqname = 'india'
 
 
 # # Setting other parameters
 resume_epoch = 0  # Default is 0, change if want to resume
-nEpochs = 150  # Number of epochs for training (500.000/2079)
+nEpochs = 200  # Number of epochs for training (500.000/2079)
 useTest = True  # See evolution of the test set when training?
 testBatch = 1  # Testing Batch
 nTestInterval = 5  # Run on test set every nTestInterval epochs
@@ -118,7 +118,7 @@ optimizer = optim.SGD(netRGB.parameters(), lr, momentum=_momentum,
 #                                           tr.ScaleNRotate(rots=(-30, 30), scales=(.75, 1.25)),
 #                                           tr.ToTensor()])
 
-composed_transforms = transforms.Compose([tr.VideoLucidDream(),
+composed_transforms = transforms.Compose([tr.VideoResize (sizes=[224, 224]),
                                           tr.ToTensor()])
 
 # composed_transforms = transforms.Compose([tr.ToTensor()])
@@ -180,13 +180,13 @@ for epoch in range(resume_epoch, nEpochs):
             for imageIndex in range(10):
                 inputImage = random_inputs[imageIndex, :, :, :]
                 inputImage = np.transpose(inputImage, (1, 2, 0))
-                #inputImage = inputImage[:, :, ::-1]
+                inputImage = inputImage[:, :, ::-1]
                 images_list.append(inputImage)
                 mask = random_outputs[imageIndex, 0, :, :]
                 heatMap = getHeatMapFrom2DArray(mask)
                 images_list.append(heatMap)
                 mask = 1 / (1 + np.exp(-mask))
-                print('max: ' + str(np.max(mask)) + 'min: ' + str(np.min(mask)))
+                #print('max: ' + str(np.max(mask)) + 'min: ' + str(np.min(mask)))
                 mask_ = np.greater(mask, 0.5).astype(np.float32)
                 overlayedImage = helpers.overlay_mask(inputImage, mask_)
                 overlayedImage = overlayedImage * 255

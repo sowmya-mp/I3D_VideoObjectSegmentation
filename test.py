@@ -8,6 +8,7 @@ from datetime import datetime
 from tensorboardX import SummaryWriter
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
 # PyTorch includes
 import torch
 from torch.autograd import Variable
@@ -26,7 +27,7 @@ from logger import Logger
 from dataloaders import helpers
 
 # Select which GPU, -1 if CPU
-gpu_id = -1
+gpu_id = 0
 print('Using GPU: {} '.format(gpu_id))
 
 # Setting of parameters
@@ -35,11 +36,11 @@ p = {
     'trainBatch': 1,  # Number of Images in each mini-batch
 }
 
-seqname = 'parkour'
+seqname = 'india'
 
 # # Setting other parameters
 resume_epoch = 0  # Default is 0, change if want to resume
-nEpochs = 100  # Number of epochs for training (500.000/2079)
+nEpochs = 150  # Number of epochs for training (500.000/2079)
 useTest = True  # See evolution of the test set when training?
 testBatch = 1  # Testing Batch
 nTestInterval = 5  # Run on test set every nTestInterval epochs
@@ -54,14 +55,14 @@ if not os.path.exists(save_dir):
 
 # Network definition
 # siddhanj: here number of classes do not matter, as that just helps choose what kind of i3d video we want to use
-modelName = 'parent'
+modelName = 'test'
 
 if train_rgb:
     netRGB = vos.I3D(num_classes=400, modality='rgb')
 else:
     netFlow = vos.I3D(num_classes=400, modality='flow')
 
-# netRGB.load_state_dict(torch.load('models/parent_epoch-479.pth'),False)
+netRGB.load_state_dict(torch.load('models/online_epoch-99.pth'),False)
 
 tboardLogger = Logger('../logs/tensorboardLogs', 'test')
 
@@ -122,21 +123,23 @@ for ii, sample_batched in enumerate(testloader):
     else:
         all_inputs = inputs_.data.numpy()[0, logging_frames, :, :, :]
         all_outputs = outputs_.data.numpy()[0, logging_frames, :, :, :]
-    for imageIndex in range(10):
+    for imageIndex in range(number_frames):
         inputImage = all_inputs[imageIndex, :, :, :]
         inputImage = np.transpose(inputImage, (1, 2, 0))
-        inputImage = inputImage[:, :, ::-1]
+        #inputImage = inputImage[:, :, ::-1]
         images_list.append(inputImage)
         mask = all_outputs[imageIndex, 0, :, :]
         heatMap = getHeatMapFrom2DArray(mask)
         images_list.append(heatMap)
-        #mask = 1 / (1 + np.exp(-mask))
+        mask = 1 / (1 + np.exp(-mask))
         print('max: ' + str(np.max(mask)) + 'min: ' + str(np.min(mask)))
-        #mask_ = np.greater(mask, 0.5).astype(np.float32)
-        mask_ = np.greater(mask, 0).astype(np.float32)
+        mask_ = np.greater(mask, 0.722).astype(np.float32)
+        #mask_ = np.greater(mask, 0).astype(np.float32)
         overlayedImage = helpers.overlay_mask(inputImage, mask_)
         overlayedImage = overlayedImage * 255
-        images_list.append(overlayedImage)
+	fileName = 'results_test/' + str(seqname) + '_' + str(imageIndex) + '.jpg'
+	cv2.imwrite(fileName, overlayedImage)
+	images_list.append(overlayedImage)
     tboardLogger.image_summary('image_test', images_list, 1)
 
 
