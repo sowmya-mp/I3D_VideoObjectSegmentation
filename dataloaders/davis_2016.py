@@ -212,7 +212,7 @@ if __name__ == '__main__':
 
     #siddhanj: scale messes is it up for somereason. Investigate into this later
     #transforms = transforms.Compose([tr.RandomHorizontalFlip(), tr.Resize(scales=[0.5, 0.8, 1]), tr.ToTensor()])
-    transforms = transforms.Compose([tr.VideoResize (sizes=[224, 224]) , tr.ToTensor()])
+    transforms = transforms.Compose([tr.VideoLucidDream() , tr.ToTensor()])
     #transforms = transforms.Compose([tr.ToTensor()])
 
     dataset = DAVIS2016(db_root_dir='../Data/DAVIS',

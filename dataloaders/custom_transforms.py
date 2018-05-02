@@ -124,6 +124,78 @@ class VideoResize(object):
 
         return sample
 
+class VideoLucidDream(object):
+    """Resizes the set of videos frames and the ground truths to specified pixel values.
+    Args:
+        size (list): the list of sizes
+    """
+    def __init__(self, sizes=[224, 224]):
+        self.sizes = sizes
+
+    def __call__(self, sample):
+        print(sample.keys())
+        for elem in sample.keys():
+            if 'fname' in elem:
+                continue
+            tmp = sample[elem]
+
+
+            flagval = 'bilinear'
+
+            isFlip = True
+            isJitter = True
+            isRotate = True
+
+            if random.random() < 0.5:
+                isFlip = False
+            if random.random() < 0.5:
+                isJitter = False
+            if random.random() < 0.5:
+                isRotate = False
+
+            num_frames = tmp.shape[0]
+            tmp = np.transpose(tmp, (0, 2, 3, 1))
+            res = []
+            isGT = tmp.shape[3] == 1
+            for frameIndex in range(num_frames):
+                if isGT:
+                    toAppend = spy.imresize(tmp[frameIndex, :, :, 0], (self.sizes[0], self.sizes[1]), interp=flagval)
+                    toAppend = np.reshape(toAppend,(self.sizes[0], self.sizes[1],1))
+                    if isFlip:
+                        toAppend = cv2.flip(toAppend, flipCode=1)
+                    if isRotate:
+                        M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
+                        toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
+
+                    res.append(toAppend)
+                else:
+                    toAppend = spy.imresize(tmp[frameIndex, :, :, :], (self.sizes[0], self.sizes[1]), interp=flagval)
+                    if isFlip:
+                        toAppend = cv2.flip(toAppend, flipCode=1)
+                    if isRotate:
+                        M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
+                        toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
+                    if isJitter:
+                        noise = np.random.randint(0, 50, (toAppend.shape[0], toAppend.shape[1]))  # design jitter/noise here
+                        zitter = np.zeros_like(toAppend)
+                        zitter[:, :, 1] = noise
+
+                        toAppend = cv2.add(toAppend, zitter)
+
+                    res.append(toAppend)
+
+            tmp = np.array(res,dtype="float32")
+            tmp = np.transpose(tmp, (0, 3, 1, 2))
+
+            #siddhant: We are normalizing here because i3d expects normalized image values
+            # For Ground truth the imresize function converts 0-1 values to 0-255, so we are converting it back
+            tmp = np.array(tmp, dtype=np.float32)
+            tmp = tmp / np.max([tmp.max(), 1e-8])
+            sample[elem] = tmp
+
+        return sample
+
+
 
 class RandomHorizontalFlip(object):
     """Horizontally flip the given image and ground truth randomly with a probability of 0.5."""

@@ -117,7 +117,7 @@ optimizer = optim.SGD(netRGB.parameters(), lr, momentum=_momentum,
 #                                           tr.ScaleNRotate(rots=(-30, 30), scales=(.75, 1.25)),
 #                                           tr.ToTensor()])
 
-composed_transforms = transforms.Compose([tr.VideoResize(),
+composed_transforms = transforms.Compose([tr.VideoLucidDream(),
                                           tr.ToTensor()])
 
 # composed_transforms = transforms.Compose([tr.ToTensor()])
@@ -151,6 +151,8 @@ for epoch in range(resume_epoch, nEpochs):
     for ii, sample_batched in enumerate(testloader):
 
         inputs, gts = sample_batched['image'], sample_batched['gt']
+
+
 
         # Forward-Backward of the mini-batch
         inputs, gts = Variable(inputs), Variable(gts)
