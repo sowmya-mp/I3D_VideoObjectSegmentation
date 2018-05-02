@@ -134,6 +134,19 @@ class VideoLucidDream(object):
 
     def __call__(self, sample):
         print(sample.keys())
+
+        num_frames = sample['gt'].shape[0]
+        isFlip = np.ones(num_frames, dtype=bool)
+        isJitter = np.ones(num_frames, dtype=bool)
+        isRotate = np.ones(num_frames, dtype=bool)
+        for i in range(num_frames):
+            if random.random() < 0.5:
+                isFlip[i] = False
+            if random.random() < 0.5:
+                isJitter[i] = False
+            if random.random() < 0.5:
+                isRotate[i] = False
+
         for elem in sample.keys():
             if 'fname' in elem:
                 continue
@@ -141,17 +154,6 @@ class VideoLucidDream(object):
 
 
             flagval = 'bilinear'
-
-            isFlip = True
-            isJitter = True
-            isRotate = True
-
-            if random.random() < 0.5:
-                isFlip = False
-            if random.random() < 0.5:
-                isJitter = False
-            if random.random() < 0.5:
-                isRotate = False
 
             num_frames = tmp.shape[0]
             tmp = np.transpose(tmp, (0, 2, 3, 1))
@@ -161,21 +163,21 @@ class VideoLucidDream(object):
                 if isGT:
                     toAppend = spy.imresize(tmp[frameIndex, :, :, 0], (self.sizes[0], self.sizes[1]), interp=flagval)
                     toAppend = np.reshape(toAppend,(self.sizes[0], self.sizes[1],1))
-                    if isFlip:
+                    if isFlip[frameIndex]:
                         toAppend = cv2.flip(toAppend, flipCode=1)
-                    if isRotate:
+                    if isRotate[frameIndex]:
                         M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
                         toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
 
-                    res.append(toAppend)
+                    res.append(np.reshape(toAppend,(self.sizes[0], self.sizes[1],1)))
                 else:
                     toAppend = spy.imresize(tmp[frameIndex, :, :, :], (self.sizes[0], self.sizes[1]), interp=flagval)
-                    if isFlip:
+                    if isFlip[frameIndex]:
                         toAppend = cv2.flip(toAppend, flipCode=1)
-                    if isRotate:
+                    if isRotate[frameIndex]:
                         M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
                         toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
-                    if isJitter:
+                    if isJitter[frameIndex]:
                         noise = np.random.randint(0, 50, (toAppend.shape[0], toAppend.shape[1]))  # design jitter/noise here
                         zitter = np.zeros_like(toAppend)
                         zitter[:, :, 1] = noise
