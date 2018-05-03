@@ -3,7 +3,8 @@ import cv2
 import numpy as np
 import torch
 import scipy.misc as spy
-
+import torchvision.transforms 
+import PIL
 
 class ScaleNRotate(object):
     """Scale (zoom-in, zoom-out) and Rotate the image and the ground truth.
@@ -160,8 +161,13 @@ class VideoLucidDream(object):
             res = []
             isGT = tmp.shape[3] == 1
             for frameIndex in range(num_frames):
+                seed = random.randint(0,2**32)
+                randCropTransform = torchvision.transforms.RandomCrop(self.sizes, padding=0)
                 if isGT:
-                    toAppend = spy.imresize(tmp[frameIndex, :, :, 0], (self.sizes[0], self.sizes[1]), interp=flagval)
+                    random.seed(seed)
+                    imageToCrop = PIL.Image.fromarray(tmp[frameIndex, :, :, 0])
+                    toAppend = randCropTransform(imageToCrop)
+                    toAppend = np.array(toAppend)
                     toAppend = np.reshape(toAppend,(self.sizes[0], self.sizes[1],1))
                     if isFlip[frameIndex]:
                         toAppend = cv2.flip(toAppend, flipCode=1)
@@ -171,14 +177,17 @@ class VideoLucidDream(object):
 
                     res.append(np.reshape(toAppend,(self.sizes[0], self.sizes[1],1)))
                 else:
-                    toAppend = spy.imresize(tmp[frameIndex, :, :, :], (self.sizes[0], self.sizes[1]), interp=flagval)
+                    random.seed(seed)
+                    imageToCrop = PIL.Image.fromarray(np.asarray(tmp[frameIndex, :, :, :],dtype=np.uint8),'RGB')
+                    toAppend = randCropTransform(imageToCrop)
+                    toAppend = np.array(toAppend)
                     if isFlip[frameIndex]:
                         toAppend = cv2.flip(toAppend, flipCode=1)
                     if isRotate[frameIndex]:
                         M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
                         toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
                     if isJitter[frameIndex]:
-                        noise = np.random.randint(0, 50, (toAppend.shape[0], toAppend.shape[1]))  # design jitter/noise here
+                        noise = np.random.randint(0, 5, (toAppend.shape[0], toAppend.shape[1]))  # design jitter/noise here
                         zitter = np.zeros_like(toAppend)
                         zitter[:, :, 1] = noise
 
