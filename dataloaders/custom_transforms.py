@@ -134,7 +134,6 @@ class VideoLucidDream(object):
         self.sizes = sizes
 
     def __call__(self, sample):
-        print(sample.keys())
 
         num_frames = sample['gt'].shape[0]
         isFlip = np.ones(num_frames, dtype=bool)
@@ -147,7 +146,7 @@ class VideoLucidDream(object):
                 isJitter[i] = False
             if random.random() < 0.5:
                 isRotate[i] = False
-
+        seed = 12345
         for elem in sample.keys():
             if 'fname' in elem:
                 continue
@@ -161,10 +160,9 @@ class VideoLucidDream(object):
             res = []
             isGT = tmp.shape[3] == 1
             for frameIndex in range(num_frames):
-                seed = random.randint(0,2**32)
+                random.seed(frameIndex)
                 randCropTransform = torchvision.transforms.RandomCrop(self.sizes, padding=0)
                 if isGT:
-                    random.seed(seed)
                     imageToCrop = PIL.Image.fromarray(tmp[frameIndex, :, :, 0])
                     toAppend = randCropTransform(imageToCrop)
                     toAppend = np.array(toAppend)
@@ -177,7 +175,6 @@ class VideoLucidDream(object):
 
                     res.append(np.reshape(toAppend,(self.sizes[0], self.sizes[1],1)))
                 else:
-                    random.seed(seed)
                     imageToCrop = PIL.Image.fromarray(np.asarray(tmp[frameIndex, :, :, :],dtype=np.uint8),'RGB')
                     toAppend = randCropTransform(imageToCrop)
                     toAppend = np.array(toAppend)
