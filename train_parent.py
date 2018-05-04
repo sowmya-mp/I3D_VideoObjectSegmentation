@@ -73,7 +73,7 @@ else:
 '''
 
 
-#netRGB.load_state_dict(torch.load('models/parent_epoch-479.pth'),False)
+netRGB.load_state_dict(torch.load('models/parent_epoch-199.pth'),False)
 
 # Logging into Tensorboard
 
@@ -105,7 +105,7 @@ if gpu_id >= 0:
 
 
 # Use the following optimizer
-lr = 1e-2
+lr = 1e-4
 wd = 0.0002
 _momentum = 0.9
 optimizer = optim.SGD(netRGB.parameters(), lr, momentum=_momentum,

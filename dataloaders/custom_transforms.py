@@ -169,9 +169,9 @@ class VideoLucidDream(object):
                     toAppend = np.reshape(toAppend,(self.sizes[0], self.sizes[1],1))
                     if isFlip[frameIndex]:
                         toAppend = cv2.flip(toAppend, flipCode=1)
-                    if isRotate[frameIndex]:
-                        M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
-                        toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
+                    #if isRotate[frameIndex]:
+                    #    M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
+                    #    toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
 
                     res.append(np.reshape(toAppend,(self.sizes[0], self.sizes[1],1)))
                 else:
@@ -180,9 +180,9 @@ class VideoLucidDream(object):
                     toAppend = np.array(toAppend)
                     if isFlip[frameIndex]:
                         toAppend = cv2.flip(toAppend, flipCode=1)
-                    if isRotate[frameIndex]:
-                        M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
-                        toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
+                    #if isRotate[frameIndex]:
+                    #    M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
+                    #    toAppend = cv2.warpAffine(toAppend,M,(toAppend.shape[0],toAppend.shape[1]))
                     if isJitter[frameIndex]:
                         noise = np.random.randint(0, 5, (toAppend.shape[0], toAppend.shape[1]))  # design jitter/noise here
                         zitter = np.zeros_like(toAppend)

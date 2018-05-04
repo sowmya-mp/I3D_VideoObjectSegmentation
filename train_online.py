@@ -75,7 +75,7 @@ else:
 
 '''
 
-netRGB.load_state_dict(torch.load('models/parent_epoch-600.pth'),False)
+netRGB.load_state_dict(torch.load('models/parent_epoch-239.pth'),False)
 
 # Logging into Tensorboard
 
