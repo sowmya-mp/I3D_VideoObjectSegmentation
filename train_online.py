@@ -36,7 +36,7 @@ p = {
     'trainBatch': 1,  # Number of Images in each mini-batch
 }
 
-seqname = 'india'
+seqname = 'parkour'
 
 
 # # Setting other parameters
@@ -75,7 +75,7 @@ else:
 
 '''
 
-netRGB.load_state_dict(torch.load('models/parent_epoch-239.pth'),False)
+netRGB.load_state_dict(torch.load('models/parent_epoch-480.pth'),False)
 
 # Logging into Tensorboard
 
@@ -118,7 +118,7 @@ optimizer = optim.SGD(netRGB.parameters(), lr, momentum=_momentum,
 #                                           tr.ScaleNRotate(rots=(-30, 30), scales=(.75, 1.25)),
 #                                           tr.ToTensor()])
 
-composed_transforms = transforms.Compose([tr.VideoResize (sizes=[224, 224]),
+composed_transforms = transforms.Compose([tr.VideoLucidDream(sizes=[224, 224]),
                                           tr.ToTensor()])
 
 # composed_transforms = transforms.Compose([tr.ToTensor()])

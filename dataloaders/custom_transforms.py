@@ -141,16 +141,17 @@ class VideoLucidDream(object):
     def __call__(self, sample):
 
         num_frames = sample['gt'].shape[0]
-        isFlip = np.ones(num_frames, dtype=bool)
+	
+        isFlip = random.random() <0.5
         isJitter = np.ones(num_frames, dtype=bool)
-        isRotate = np.ones(num_frames, dtype=bool)
+ #       isRotate = np.ones(num_frames, dtype=bool)
         for i in range(num_frames):
-            if random.random() < 0.5:
-                isFlip[i] = False
+ #           if random.random() < 0.5:
+ #               isFlip[i] = False
             if random.random() < 0.5:
                 isJitter[i] = False
-            if random.random() < 0.5:
-                isRotate[i] = False
+ #           if random.random() < 0.5:
+ #               isRotate[i] = False
         seed = 12345
 
         input_tmp = sample['image']
@@ -165,26 +166,24 @@ class VideoLucidDream(object):
         width = input_tmp.shape[1]
         res_input = []
         res_gt = []
+        left = np.random.randint(0, width-1-224)
+        top = np.random.randint(0, height-1-224)
+        imageToCrop = gt_tmp[0, :, :, 0]
+        num_gt_pixels = np.sum(imageToCrop)
+        while True:
+            cropped_gt = imageToCrop[left:left+224,top:top+224]
+            #threshold = np.sum(cropped_gt) / float(gt_pixels)
+            if np.sum(cropped_gt) >= 0.3*num_gt_pixels:
+                break
+            else:
+                left = np.random.randint(0, width - 1 - 224)
+                top = np.random.randint(0, height - 1 - 224)
         for frameIndex in range(num_frames):
-            # random.seed(frameIndex)
-            #randCropTransform = torchvision.transforms.RandomCrop(self.sizes, padding=0)
-            left = np.random.randint(0, width-1-224)
-            top = np.random.randint(0, height-1-224)
-            while True:
-                imageToCrop = gt_tmp[frameIndex, :, :, 0]
-                cropped_gt = imageToCrop[left:left+224,top:top+224]
-                threshold = np.sum(cropped_gt) / float(height*width)
-                if threshold > 0.002:
-                    break
-                else:
-                    left = np.random.randint(0, width - 1 - 224)
-                    top = np.random.randint(0, height - 1 - 224)
-
             # GT transformations
             imageToCrop = gt_tmp[frameIndex, :, :, 0]
             toAppend = imageToCrop[left:left+224, top:top+224]
             toAppend = np.reshape(toAppend, (self.sizes[0], self.sizes[1], 1))
-            if isFlip[frameIndex]:
+            if isFlip:
                 toAppend = cv2.flip(toAppend, flipCode=1)
             # if isRotate[frameIndex]:
             #    M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)
@@ -195,7 +194,7 @@ class VideoLucidDream(object):
             #Input transformations
             imageToCrop = input_tmp[frameIndex, :, :, :]
             toAppend = imageToCrop[left:left+224, top:top+224]
-            if isFlip[frameIndex]:
+            if isFlip:
                 toAppend = cv2.flip(toAppend, flipCode=1)
             # if isRotate[frameIndex]:
             #    M = cv2.getRotationMatrix2D((toAppend.shape[0]/2,toAppend.shape[1]/2),90,1)

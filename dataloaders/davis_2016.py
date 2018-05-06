@@ -105,13 +105,14 @@ class DAVIS2016(Dataset):
         imgSize = self.get_img_size()
 
         totalNumOfFrames = len(seq_img_list)
-        if totalNumOfFrames % 4 != 0:
+        
+	if totalNumOfFrames % 4 != 0:
             totalNumOfFrames = totalNumOfFrames + (4 - totalNumOfFrames % 4)
 
         imgs = np.zeros([totalNumOfFrames, 3, imgSize[0], imgSize[1]], dtype=np.float32)
         gts = np.zeros([totalNumOfFrames, 1, imgSize[0], imgSize[1]], dtype=np.float32)
 
-        for ctr in range(totalNumOfFrames):
+	for ctr in range(totalNumOfFrames):
 
             if ctr >= 1:
                 img_name = seq_img_list[0]
@@ -159,9 +160,13 @@ class DAVIS2016(Dataset):
         imgSize = self.get_img_size()
 
         totalNumOfFrames = len(seq_img_list)
+	
+        if (self.train == False and self.train_online == False):
+	    totalNumOfFrames = 50
         if totalNumOfFrames%4!=0:
             totalNumOfFrames = totalNumOfFrames + (4-totalNumOfFrames%4)
-
+	
+	print(totalNumOfFrames)
         imgs = np.zeros([totalNumOfFrames,3,imgSize[0],imgSize[1]],dtype=np.float32)
         gts = np.zeros([totalNumOfFrames,1,imgSize[0],imgSize[1]],dtype=np.float32)
 

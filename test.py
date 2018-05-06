@@ -36,7 +36,7 @@ p = {
     'trainBatch': 1,  # Number of Images in each mini-batch
 }
 
-seqname = 'india'
+seqname = 'parkour'
 
 # # Setting other parameters
 resume_epoch = 0  # Default is 0, change if want to resume
@@ -62,14 +62,15 @@ if train_rgb:
 else:
     netFlow = vos.I3D(num_classes=400, modality='flow')
 
-netRGB.load_state_dict(torch.load('models/online_epoch-99.pth'),False)
+netRGB.load_state_dict(torch.load('models/online_epoch-199.pth'),False)
 
 tboardLogger = Logger('../logs/tensorboardLogs', 'test')
 
 if gpu_id >= 0:
-    torch.cuda.set_device(device=gpu_id)
+   # torch.cuda.set_device(device=gpu_id)
     if train_rgb:
-        netRGB.cuda()
+	#model = torch.nn.DataParallel(model).cuda()
+        netRGB = torch.nn.DataParallel(netRGB,device_ids=[0, 1]).cuda()
         netRGB.eval()
     else:
         netFlow.cuda()
@@ -81,7 +82,9 @@ if gpu_id >= 0:
 #                                           tr.ScaleNRotate(rots=(-30, 30), scales=(.75, 1.25)),
 #                                           tr.ToTensor()])
 
-composed_transforms = transforms.Compose([tr.VideoResize(), tr.ToTensor()])
+composed_transforms = transforms.Compose([tr.ToTensor(),tr.VideoResize([480,848])])
+
+#composed_transforms = transforms.Compose([tr.ToTensor()])
 
 # composed_transforms = transforms.Compose([tr.ToTensor()])
 
@@ -133,7 +136,7 @@ for ii, sample_batched in enumerate(testloader):
         images_list.append(heatMap)
         mask = 1 / (1 + np.exp(-mask))
         print('max: ' + str(np.max(mask)) + 'min: ' + str(np.min(mask)))
-        mask_ = np.greater(mask, 0.722).astype(np.float32)
+        mask_ = np.greater(mask, 0.5).astype(np.float32)
         #mask_ = np.greater(mask, 0).astype(np.float32)
         overlayedImage = helpers.overlay_mask(inputImage, mask_)
         overlayedImage = overlayedImage * 255
