@@ -113,6 +113,7 @@ for ii, sample_batched in enumerate(testloader):
     colCtr = 0
 
     while rowCtr + 224 < numRows:
+        colCtr =0
         while colCtr + 224 < numCols:
             inputs_crop = inputs[:,:,:,rowCtr:rowCtr+224,colCtr:colCtr+224]
             gts_crop = gts[:,:,:,rowCtr:rowCtr+224,colCtr:colCtr+224]
@@ -135,26 +136,26 @@ for ii, sample_batched in enumerate(testloader):
             outputs[3][:, :, :, rowCtr:rowCtr + 224, colCtr:colCtr + 224] += outputs_crop[3]
             outputs[4][:, :, :, rowCtr:rowCtr + 224, colCtr:colCtr + 224] += outputs_crop[4]
             outputs_counter[rowCtr:rowCtr+224,colCtr:colCtr+224] +=1
-            colCtr+=1
-        rowCtr+=1
+            colCtr+=100
+        rowCtr+=100
 
     outputs = outputs/outputs_counter
-
-    outputs = [Variable(outputs[i])for i in range(5)]
+    
+    outputs = [ Variable(torch.from_numpy(outputs[i])) for i in range(5)]
 
     if gpu_id>=0:
-        outputs = [outputs[i].cuda for i in range(5)]
+        outputs = [outputs[i].cuda() for i in range(5)]
 
     images_list = []
     number_frames = inputs.shape[2]
     logging_frames = np.arange(number_frames)
-    inputs_ = torch.transpose(inputs, 1, 2)
+    inputs_ = np.transpose(inputs, [0,2,1,3,4])
     outputs_ = torch.transpose(outputs[-1], 1, 2)
     if gpu_id >= 0:
-        all_inputs = inputs_.data.cpu().numpy()[0, logging_frames, :, :, :]
+        all_inputs = inputs_[0, logging_frames, :, :, :]
         all_outputs = outputs_.data.cpu().numpy()[0, logging_frames, :, :, :]
     else:
-        all_inputs = inputs_.data.numpy()[0, logging_frames, :, :, :]
+        all_inputs = inputs_[0, logging_frames, :, :, :]
         all_outputs = outputs_.data.numpy()[0, logging_frames, :, :, :]
     for imageIndex in range(number_frames):
         inputImage = all_inputs[imageIndex, :, :, :]
