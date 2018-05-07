@@ -121,7 +121,7 @@ for ii, sample_batched in enumerate(testloader):
             inputs_crop = torch.transpose(inputs_crop, 1, 2)
             gts_crop = torch.transpose(gts_crop, 1, 2)
             if gpu_id >= 0:
-                inputs_crop, gts = inputs_crop.cuda(), gts_crop.cuda()
+                inputs_crop, gts_crop = inputs_crop.cuda(), gts_crop.cuda()
 
             outputs_crop = netRGB.forward(inputs_crop)
             if gpu_id >=0:
