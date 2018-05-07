@@ -104,16 +104,46 @@ print("Testing Network")
 for ii, sample_batched in enumerate(testloader):
 
     inputs, gts = sample_batched['image'], sample_batched['gt']
+    outputs = [np.zeros([1,1,inputs.shape[1],inputs.shape[3],inputs.shape[4]])]*5
 
-    # Forward-Backward of the mini-batch
-    inputs, gts = Variable(inputs, volatile=True), Variable(gts, volatile=True)
+    numRows = inputs.shape[3]
+    numCols = inputs.shape[4]
+    outputs_counter = np.zeros([numRows,numCols])
+    rowCtr = 0
+    colCtr = 0
 
-    inputs = torch.transpose(inputs, 1, 2)
-    gts = torch.transpose(gts, 1, 2)
-    if gpu_id >= 0:
-        inputs, gts = inputs.cuda(), gts.cuda()
+    while rowCtr + 224 < numRows:
+        while colCtr + 224 < numCols:
+            inputs_crop = inputs[:,:,:,rowCtr:rowCtr+224,colCtr:colCtr+224]
+            gts_crop = gts[:,:,:,rowCtr:rowCtr+224,colCtr:colCtr+224]
+            inputs_crop, gts_crop = Variable(inputs_crop, volatile=True), Variable(gts_crop, volatile=True)
 
-    outputs = netRGB.forward(inputs)
+            inputs_crop = torch.transpose(inputs_crop, 1, 2)
+            gts_crop = torch.transpose(gts_crop, 1, 2)
+            if gpu_id >= 0:
+                inputs_crop, gts = inputs_crop.cuda(), gts_crop.cuda()
+
+            outputs_crop = netRGB.forward(inputs_crop)
+            if gpu_id >=0:
+                outputs_crop = [outputs_crop[i].data.cpu().numpy() for i in range(5)]
+            else:
+                outputs_crop = [outputs_crop[i].data.numpy() for i in range(5)]
+
+            outputs[0][:, :, :, rowCtr:rowCtr + 224, colCtr:colCtr + 224] += outputs_crop[0]
+            outputs[1][:, :, :, rowCtr:rowCtr + 224, colCtr:colCtr + 224] += outputs_crop[1]
+            outputs[2][:, :, :, rowCtr:rowCtr + 224, colCtr:colCtr + 224] += outputs_crop[2]
+            outputs[3][:, :, :, rowCtr:rowCtr + 224, colCtr:colCtr + 224] += outputs_crop[3]
+            outputs[4][:, :, :, rowCtr:rowCtr + 224, colCtr:colCtr + 224] += outputs_crop[4]
+            outputs_counter[rowCtr:rowCtr+224,colCtr:colCtr+224] +=1
+            colCtr+=1
+        rowCtr+=1
+
+    outputs = outputs/outputs_counter
+
+    outputs = [Variable(outputs[i])for i in range(5)]
+
+    if gpu_id>=0:
+        outputs = [outputs[i].cuda for i in range(5)]
 
     images_list = []
     number_frames = inputs.shape[2]
