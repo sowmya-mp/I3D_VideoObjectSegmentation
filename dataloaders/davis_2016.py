@@ -161,8 +161,6 @@ class DAVIS2016(Dataset):
 
         totalNumOfFrames = len(seq_img_list)
 	
-        if (self.train == False and self.train_online == False):
-	    totalNumOfFrames = 50
         if totalNumOfFrames%4!=0:
             totalNumOfFrames = totalNumOfFrames + (4-totalNumOfFrames%4)
 	

@@ -108,7 +108,7 @@ for ii, sample_batched in enumerate(testloader):
 
     numRows = inputs.shape[3]
     numCols = inputs.shape[4]
-    outputs_counter = np.zeros([numRows,numCols])
+    outputs_counter = np.ones([numRows,numCols])
     rowCtr = 0
     colCtr = 0
 
@@ -147,12 +147,12 @@ for ii, sample_batched in enumerate(testloader):
         outputs = [outputs[i].cuda() for i in range(5)]
 
     images_list = []
-    number_frames = inputs.shape[2]
+    number_frames = inputs.shape[1]
     logging_frames = np.arange(number_frames)
     inputs_ = np.transpose(inputs, [0,2,1,3,4])
     outputs_ = torch.transpose(outputs[-1], 1, 2)
     if gpu_id >= 0:
-        all_inputs = inputs_[0, logging_frames, :, :, :]
+        all_inputs = inputs_.numpy()[0,:, logging_frames, :, :]
         all_outputs = outputs_.data.cpu().numpy()[0, logging_frames, :, :, :]
     else:
         all_inputs = inputs_.numpy()[0, :,logging_frames, :, :]
