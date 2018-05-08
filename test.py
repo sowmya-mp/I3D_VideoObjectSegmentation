@@ -155,7 +155,7 @@ for ii, sample_batched in enumerate(testloader):
         all_inputs = inputs_[0, logging_frames, :, :, :]
         all_outputs = outputs_.data.cpu().numpy()[0, logging_frames, :, :, :]
     else:
-        all_inputs = inputs_[0, logging_frames, :, :, :]
+        all_inputs = inputs_.numpy()[0, :,logging_frames, :, :]
         all_outputs = outputs_.data.numpy()[0, logging_frames, :, :, :]
     for imageIndex in range(number_frames):
         inputImage = all_inputs[imageIndex, :, :, :]
